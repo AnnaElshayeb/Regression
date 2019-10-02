@@ -1,0 +1,130 @@
+---
+title: "Polynomial Regression"
+author: "AE"
+date: "10/2/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Polynomial Regression
+
+### Library Imports
+```{r Libs}
+library(readr)
+library(caTools)
+library(ggplot2)
+```
+
+
+### Data Import
+```{r Data}
+Position_Salaries <- read_csv("~/work/practice/Python/Regression/Position_Salaries.csv")
+View(Position_Salaries)
+data <- Position_Salaries[2:3]
+summary(Position_Salaries)
+```
+The data is a list of salaries for different poisitional levels, with a posiition of 1 corresponding to a low level job of "Business Analyst" and 10 corresponding to the CEO.
+
+I'm creating a polynomial fit of the data, in order to provide a model to accurate estimate salaries of new employees, based on their previously held positions. (This is of course fabricated data and a fabricated goal. To this end, it is best to "assume" that the data in the Position_Salaries data frame is a well evaluated list of average market salries for the positions at my imaginary company.)
+
+The data set is too small to split into a train/test split, so I'll just be working with the full set for the data.
+
+### Fitting a Linear Model for Comparison
+```{r LinReg}
+lin_reg = lm(data$Salary ~., data = data)
+summary(lin_reg)
+```
+The linear model explains approxiamately 62.77% of the variance in the data. This is a pretty bad fit.
+
+### Fitting the Polynomial Regression
+```{r PolyReg}
+data$Level2 <- data$Level^2
+data$Level3 <- data$Level^3
+poly_reg = lm(data$Salary ~ .,
+              data = data)
+summary(poly_reg)
+```
+
+This model is now explaining approximately 97% of the variance in the data, which is an exceptionally good fit. Lets check how a 4th degree polynomial would compare to the 3rd degree model above.
+
+```{r Poly4}
+data$Level4 <- data$Level^4
+poly_reg_4 = lm(data$Salary ~ .,
+              data = data)
+summary(poly_reg_4)
+
+```
+
+This model explains an incredible (well not SO incredible, since this is fabricated data) 99.5% of the variance in the data.
+
+### Visualizing the Linear Regression
+```{r Viz_Lin}
+ggplot() +
+  geom_point(aes(x = data$Level, y = data$Salary),
+             color = "red") +
+  geom_line(aes(x = data$Level, 
+                y = predict(lin_reg, 
+                            newdata = data)),
+            color = "blue") +
+  ggtitle("Truth of Bluff (Linear Regression)") +
+  xlab("POsition Level") +
+  ylab("Salary")
+
+```
+
+### Visualizing the Polynomial Fit (3rd degree)
+```{r VizPoly}
+ggplot() +
+  geom_point(aes(x = data$Level, y = data$Salary),
+             color = "red") +
+  geom_line(aes(x = data$Level, 
+                y = predict(poly_reg, 
+                            newdata = data)),
+            color = "blue") +
+  ggtitle("Truth or Bluff (Polynomial Regression)") +
+  xlab("Position Level") +
+  ylab("Salary")
+
+```
+
+### Visualizing the Polynomial Fit (4th degree)
+```{r VizPoly}
+ggplot() +
+  geom_point(aes(x = data$Level, y = data$Salary),
+             color = "red") +
+  geom_line(aes(x = data$Level, 
+                y = predict(poly_reg_4, 
+                            newdata = data)),
+            color = "blue") +
+  ggtitle("Truth or Bluff (Polynomial Regression)") +
+  xlab("Position Level") +
+  ylab("Salary")
+
+```
+
+
+### Predicting a New Employee's Salary
+#### Linear Regressor
+```{r Preds_lin}
+preds <- predict(lin_reg, newdata = data.frame(Level = 6.5))
+preds
+```
+#### Poly Reg
+```{r Preds_Poly}
+preds <- 
+  predict(poly_reg_4, 
+          newdata = data.frame(Level = 6.5, 
+                               Level2 = 6.5^2, 
+                               Level3 = 6.5^3, 
+                               Level4 = 6.5^4))
+preds
+
+```
+
+
+
+
+
