@@ -1,0 +1,169 @@
+---
+title: "LinReg"
+author: "AE"
+date: "10/1/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Linear Regression
+
+## Simple Linear Regression
+
+```{r Libraries}
+library(readr)
+library(caTools)
+library(ggplot2)
+library(MASS)
+```
+
+
+```{r Data Import}
+Salary_Data <- 
+  read_csv("~/work/practice/Python/Regression/Salary_Data.csv")
+View(Salary_Data)
+
+```
+
+
+### Test Train Split
+```{r Test_Train}
+set.seed(123)
+split <- sample.split(Salary_Data$Salary,
+                     SplitRatio = 2/3)
+train_set <- subset(Salary_Data, split == TRUE)
+test_set <- subset(Salary_Data, split == FALSE)
+```
+
+### Fitting the model
+```{r SimpleLinReg}
+lr <- lm(Salary ~.,
+         data = train_set)
+summary(lr)
+anova(lr)
+```
+
+### Predictions
+```{r Preds}
+
+preds <- predict(lr, newdata = test_set)
+```
+
+### Visualizing the Training and Test sets
+```{r Viz_Train}
+ggplot() +
+  geom_point(
+    aes(x = train_set$YearsExperience, 
+      y = train_set$Salary), colour = "red") +
+  geom_line(
+    aes(x = train_set$YearsExperience,
+        y = predict(lr, newdata = train_set)), 
+    colour = "blue") +
+  ggtitle("Salary vs. Experience (Training Data)") +
+  xlab("Years of Exp") +
+  ylab("Salary")
+```
+
+```{r Viz_Test}
+ggplot() +
+  geom_point(aes(x = test_set$YearsExperience,
+                 y = test_set$Salary), 
+             colour = "red") +
+  geom_line(aes(x = train_set$YearsExperience, 
+                y = predict(lr, 
+                            newdata = train_set)),
+            colour = "blue") +
+  ggtitle("Salary vs. Experience (Test Data)") +
+  xlab("Years of Exp") +
+  ylab("Salary")
+```
+
+## Mulitple Linear Regression
+
+### Data Import
+```{r DataImport}
+X50_Startups <-
+  read_csv("~/work/practice/Python/Regression/50_Startups.csv")
+View(X50_Startups)
+summary(X50_Startups)
+X50_Startups$State <- as.factor(X50_Startups$State)
+#Reset the categorical variable to a factor with numerical levels
+X50_Startups$State <- 
+  factor(X50_Startups$State,
+         levels = 
+           c("New York", "Florida", "California"),
+         labels = c(1,2,3))
+```
+
+### Train Test Split
+```{r Multi_TtSplit}
+set.seed(123)
+split = sample.split(X50_Startups$Profit, SplitRatio = .70)
+Train_set <- subset(X50_Startups, split == TRUE)
+Test_set <- subset(X50_Startups, split == FALSE)
+```
+
+### Fitting the Model
+```{r FitMulti}  
+multi_lr <- lm(Train_set$Profit ~., 
+               data = Train_set)
+summary(multi_lr)
+```
+
+### Predictions
+```{r Multi_Preds}
+preds = predict(multi_lr, newdata = Test_set)
+Test_set$Profit - preds
+```
+
+### Backward Elimination
+```{r BaseMods}
+multi_lr_full <- lm(X50_Startups$Profit ~., 
+               data = X50_Startups)
+multi_lr_inter <- lm(Profit~1, data = X50_Startups)
+```
+
+
+I'll be using stepAIC for the different methods of elimination.
+
+First, Lets view the results of backward elimination.
+```{r Backward}
+
+back_multi <- 
+  stepAIC(multi_lr_full, 
+          direction = "backward", trace = TRUE)
+summary(back_multi)
+
+```
+
+The model has retain 3 varibables: R&D Spend, Marketing Spend, and the intercept.
+
+NOw lets review forward regression.
+```{r Forward}
+forward_multi <- 
+  stepAIC(multi_lr_inter, 
+          direction = "forward", 
+          scope = 
+            list(upper = multi_lr_full, 
+                 lower = multi_lr_inter),
+          trace = TRUE)
+summary(forward_multi)
+```
+
+Again, the final model retained R&D Spend, Marketing Spend, and the intercept.
+
+```{r Step}
+step_multi <- 
+  stepAIC(multi_lr_inter, 
+          direction = "both", 
+          scope = 
+            list(upper = multi_lr_full, 
+                 lower = multi_lr_inter),
+          trace = TRUE)
+summary(step_multi)
+```
+
+And, of course, the same thre variables were selected again.
